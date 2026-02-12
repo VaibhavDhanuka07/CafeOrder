@@ -2,12 +2,18 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xrkfnieuprqlmgnyxoyc.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  'https://xrkfnieuprqlmgnyxoyc.supabase.co'
+
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Helper functions for database operations
+// ===============================
+// PRODUCTS
+// ===============================
 
 // Get all available products
 export async function getProducts() {
@@ -16,12 +22,12 @@ export async function getProducts() {
     .select('*')
     .eq('is_available', true)
     .order('category', { ascending: true })
-  
+
   if (error) {
     console.error('Error fetching products:', error)
     return []
   }
-  
+
   return data
 }
 
@@ -32,34 +38,42 @@ export async function getProductsByCategory(category) {
     .select('*')
     .eq('category', category)
     .eq('is_available', true)
-  
+
   if (error) {
     console.error('Error fetching products:', error)
     return []
   }
-  
+
   return data
 }
 
-// Create a new order
-export async function createOrder(tableNumber, items, totalAmount, customerName = null, specialInstructions = null) {
+// ===============================
+// ORDERS
+// ===============================
+
+// ✅ FIXED: Create a new order (matches your actual table columns)
+export async function createOrder(
+  customerName,
+  phone,
+  address,
+  total
+) {
   const { data, error } = await supabase
     .from('orders')
     .insert({
-      table_number: tableNumber,
-      items: items,
-      total_amount: totalAmount,
       customer_name: customerName,
-      special_instructions: specialInstructions,
+      phone: phone,
+      address: address,
+      total: total,
       status: 'pending'
     })
     .select()
-  
+
   if (error) {
     console.error('Error creating order:', error)
     throw error
   }
-  
+
   return data[0]
 }
 
@@ -68,13 +82,13 @@ export async function getAllOrders() {
   const { data, error } = await supabase
     .from('orders')
     .select('*')
-    .order('created_at', { ascending: false })
-  
+    .order('id', { ascending: false })
+
   if (error) {
     console.error('Error fetching orders:', error)
     return []
   }
-  
+
   return data
 }
 
@@ -85,14 +99,18 @@ export async function updateOrderStatus(orderId, newStatus) {
     .update({ status: newStatus })
     .eq('id', orderId)
     .select()
-  
+
   if (error) {
     console.error('Error updating order:', error)
     throw error
   }
-  
+
   return data[0]
 }
+
+// ===============================
+// AUTH
+// ===============================
 
 // Admin authentication
 export async function signIn(email, password) {
@@ -100,22 +118,21 @@ export async function signIn(email, password) {
     email,
     password
   })
-  
+
   if (error) {
     console.error('Error signing in:', error)
     throw error
   }
-  
-  // Check if user is admin
+
   const isAdmin = data?.user?.user_metadata?.role === 'admin'
-  
+
   return { user: data.user, isAdmin }
 }
 
 // Sign out
 export async function signOut() {
   const { error } = await supabase.auth.signOut()
-  
+
   if (error) {
     console.error('Error signing out:', error)
     throw error
@@ -124,14 +141,25 @@ export async function signOut() {
 
 // Get current user
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
+
   return user
 }
 
-// Subscribe to order changes (real-time)
+// ===============================
+// REALTIME
+// ===============================
+
+// Subscribe to order changes
 export function subscribeToOrders(callback) {
   return supabase
     .channel('orders')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, callback)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'orders' },
+      callback
+    )
     .subscribe()
 }
