@@ -17,8 +17,11 @@ function MenuContent() {
   const [customerName, setCustomerName] = useState('')
   const [specialInstructions, setSpecialInstructions] = useState('')
   const [orderSuccess, setOrderSuccess] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState('ALL')
 
-  // Get table number from URL
+  const categoryKeys = Object.keys(menuCategories)
+  const visibleCategoryKeys = selectedCategory === 'ALL' ? categoryKeys : [selectedCategory]
+
   useEffect(() => {
     const table = searchParams.get('table')
     if (table) {
@@ -28,22 +31,18 @@ function MenuContent() {
     }
   }, [searchParams, router])
 
-  // Add to cart
   const handleAddToCart = (item) => {
     setCart([...cart, item])
   }
 
-  // Remove from cart
   const handleRemoveItem = (index) => {
     setCart(cart.filter((_, i) => i !== index))
   }
 
-  // Open checkout
   const handleCheckout = () => {
     setIsCheckingOut(true)
   }
 
-  // Place order
   const handlePlaceOrder = async () => {
     if (!tableNumber) {
       alert('Table number not found!')
@@ -75,17 +74,15 @@ function MenuContent() {
         setIsCheckingOut(false)
         setOrderSuccess(false)
       }, 3000)
-
     } catch (error) {
       alert('Failed to place order. Please try again.')
       console.error(error)
     }
   }
 
-  // Loading state
   if (!tableNumber) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading menu...</p>
@@ -95,35 +92,66 @@ function MenuContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-
-      {/* HEADER */}
-      <header className="bg-white shadow-md sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <div className="min-h-screen">
+      <header className="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-30 border-b border-amber-100">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Madhav Bakers</h1>
-            <p className="text-gray-600">Fresh Baked Delights</p>
+            <h1 className="text-3xl font-extrabold text-primary tracking-tight">Madhav Bakers</h1>
+            <p className="text-amber-800/80">Fresh Baked Delights</p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-600">Table Number</p>
-            <p className="text-2xl font-bold text-primary">#{tableNumber}</p>
+          <div className="text-right rounded-xl border border-amber-200 bg-amber-50 px-4 py-2">
+            <p className="text-xs uppercase tracking-wider text-amber-700 font-bold">Table Number</p>
+            <p className="text-2xl font-extrabold text-primary">#{tableNumber}</p>
           </div>
         </div>
       </header>
 
-      {/* MENU */}
       <main className="max-w-7xl mx-auto px-4 py-8 pb-24">
-        {Object.keys(menuCategories).map(categoryKey => {
+        <section className="mb-8">
+          <div className="card p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="text-lg font-extrabold text-gray-800">Filter Categories</h2>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{visibleCategoryKeys.length} shown</p>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <button
+                onClick={() => setSelectedCategory('ALL')}
+                className={`px-4 py-2 rounded-xl whitespace-nowrap font-semibold border transition-all ${
+                  selectedCategory === 'ALL'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-amber-50 text-gray-700 border-amber-100 hover:bg-amber-100'
+                }`}
+              >
+                All
+              </button>
+              {categoryKeys.map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setSelectedCategory(key)}
+                  className={`px-4 py-2 rounded-xl whitespace-nowrap font-semibold border transition-all ${
+                    selectedCategory === key
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-amber-50 text-gray-700 border-amber-100 hover:bg-amber-100'
+                  }`}
+                >
+                  {menuCategories[key].name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {visibleCategoryKeys.map((categoryKey) => {
           const category = menuCategories[categoryKey]
 
           return (
             <section key={categoryKey} className="mb-12">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-800 mb-6 tracking-tight">
                 {category.name}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {category.items.map(item => (
+                {category.items.map((item) => (
                   <MenuItem
                     key={item.id}
                     item={item}
@@ -137,68 +165,58 @@ function MenuContent() {
         })}
       </main>
 
-      {/* CART */}
-      <Cart
-        cart={cart}
-        onRemoveItem={handleRemoveItem}
-        onCheckout={handleCheckout}
-      />
+      <Cart cart={cart} onRemoveItem={handleRemoveItem} onCheckout={handleCheckout} />
 
-      {/* CHECKOUT MODAL */}
       {isCheckingOut && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-amber-100 animate-scaleIn">
             {!orderSuccess ? (
               <>
-                <h2 className="text-2xl font-bold mb-4">Checkout</h2>
+                <h2 className="text-2xl font-bold mb-1 text-gray-800">Checkout</h2>
+                <p className="text-sm text-gray-600 mb-4">Confirm order details before placing.</p>
 
                 <input
                   type="text"
                   placeholder="Your Name (Optional)"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 mb-3"
+                  className="input mb-3"
                 />
 
                 <textarea
                   placeholder="Special Instructions (Optional)"
                   value={specialInstructions}
                   onChange={(e) => setSpecialInstructions(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 mb-4"
+                  className="input mb-4 min-h-24"
                 />
 
                 <div className="flex justify-between gap-3">
                   <button
                     onClick={() => setIsCheckingOut(false)}
-                    className="w-1/2 bg-gray-200 py-2 rounded-lg"
+                    className="w-1/2 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
                   >
                     Cancel
                   </button>
 
-                  <button
-                    onClick={handlePlaceOrder}
-                    className="w-1/2 bg-primary text-white py-2 rounded-lg"
-                  >
+                  <button onClick={handlePlaceOrder} className="w-1/2 btn-primary py-3">
                     Place Order
                   </button>
                 </div>
               </>
             ) : (
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-green-600 mb-2">
-                  Order Placed Successfully!
-                </h2>
-                <p className="text-gray-600">
-                  Thank you for ordering.
-                </p>
+              <div className="text-center py-2">
+                <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-green-700 mb-2">Order Placed Successfully!</h2>
+                <p className="text-gray-600">Thank you for ordering.</p>
               </div>
             )}
-
           </div>
         </div>
       )}
-
     </div>
   )
 }
@@ -207,7 +225,7 @@ export default function MenuPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100">
+        <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-gray-600">Loading menu...</p>

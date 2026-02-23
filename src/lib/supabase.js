@@ -51,20 +51,22 @@ export async function getProductsByCategory(category) {
 // ORDERS
 // ===============================
 
-// ✅ FIXED: Create a new order (matches your actual table columns)
+// Create a new order (matches menu checkout payload)
 export async function createOrder(
-  customerName,
-  phone,
-  address,
-  total
+  tableNumber,
+  items,
+  total,
+  customerName = null,
+  specialInstructions = null
 ) {
   const { data, error } = await supabase
     .from('orders')
     .insert({
+      table_number: tableNumber,
+      items: items,
+      total_amount: total,
       customer_name: customerName,
-      phone: phone,
-      address: address,
-      total: total,
+      special_instructions: specialInstructions,
       status: 'pending'
     })
     .select()
